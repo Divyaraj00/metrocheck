@@ -1,15 +1,19 @@
-require("dotenv").config();
-const dns = require("dns");
+import "dotenv/config";
+
+// DNS fix for SRV lookup issues on some networks/ISPs (safe to keep even if not needed)
+import dns from "dns";
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 dns.setDefaultResultOrder("ipv4first");
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const listingRoutes = require("./routes/listingRoutes");
+
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import authRoutes from "./routes/authRoutes.js";
+import listingRoutes from "./routes/listingRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/legal-metrology-checker";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/metrocheck";
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -24,6 +28,7 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.use("/api", authRoutes);
 app.use("/api", listingRoutes);
 
 // Fallback 404 handler
@@ -48,4 +53,4 @@ async function start() {
 
 start();
 
-module.exports = app;
+export default app;

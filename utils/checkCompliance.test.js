@@ -1,4 +1,4 @@
-const { checkCompliance } = require("./checkCompliance");
+import { checkCompliance } from "./checkCompliance.js";
 
 const compliantListing = {
   netQuantity: "500 g",

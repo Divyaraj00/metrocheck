@@ -100,4 +100,4 @@ function checkCompliance(listing = {}) {
   };
 }
 
-module.exports = { checkCompliance };
+export { checkCompliance };

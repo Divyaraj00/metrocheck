@@ -1,6 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-
+// Kept loose/flexible on purpose — real-world listings from different
+// sellers won't have a uniform shape, so we store the raw submitted
+// data as-is plus the computed compliance result.
 const ListingSchema = new mongoose.Schema(
   {
     raw: {
@@ -20,8 +22,13 @@ const ListingSchema = new mongoose.Schema(
       violations: { type: [String], default: [] },
       checkedAt: { type: String, required: true },
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Listing", ListingSchema);
+export default mongoose.model("Listing", ListingSchema);

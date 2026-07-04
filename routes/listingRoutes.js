@@ -1,9 +1,19 @@
-const express = require("express");
+import express from "express";
+import Listing from "../models/Listing.js";
+import { checkCompliance } from "../utils/checkCompliance.js";
+import { requireAuth } from "../middleware/auth.js";
+
 const router = express.Router();
-const Listing = require("../models/Listing");
-const { checkCompliance } = require("../utils/checkCompliance");
 
+// All routes below require a valid Bearer token.
+router.use(requireAuth);
 
+/**
+ * POST /api/check-listing
+ * Body: a single product listing object
+ * Runs the compliance rule engine, saves the result tagged to the
+ * authenticated user, and returns it.
+ */
 router.post("/check-listing", async (req, res) => {
   try {
     const listing = req.body;
@@ -19,6 +29,7 @@ router.post("/check-listing", async (req, res) => {
       productTitle: listing.productTitle || "",
       platform: listing.platform || "unspecified",
       result,
+      createdBy: req.user.userId,
     });
 
     return res.status(201).json({
@@ -33,7 +44,12 @@ router.post("/check-listing", async (req, res) => {
   }
 });
 
-
+/**
+ * POST /api/check-batch
+ * Body: { listings: [ {...}, {...}, ... ] }
+ * Runs the compliance rule engine over each listing, saves all tagged to
+ * the authenticated user, returns array of results.
+ */
 router.post("/check-batch", async (req, res) => {
   try {
     const { listings } = req.body;
@@ -50,6 +66,7 @@ router.post("/check-batch", async (req, res) => {
         productTitle: listing.productTitle || "",
         platform: listing.platform || "unspecified",
         result,
+        createdBy: req.user.userId,
       });
       results.push({
         id: saved._id,
@@ -72,7 +89,12 @@ router.post("/check-batch", async (req, res) => {
   }
 });
 
-
+/**
+ * GET /api/history
+ * Optional query params: ?compliant=true|false, ?platform=Amazon, ?limit=20
+ * Sellers see only their own checks. Regulators/admins see everyone's —
+ * matching the real-world need for a regulator to audit across sellers.
+ */
 router.get("/history", async (req, res) => {
   try {
     const { compliant, platform, limit } = req.query;
@@ -80,6 +102,11 @@ router.get("/history", async (req, res) => {
     if (compliant === "true") filter["result.compliant"] = true;
     if (compliant === "false") filter["result.compliant"] = false;
     if (platform) filter.platform = platform;
+
+    const isPrivileged = req.user.role === "regulator" || req.user.role === "admin";
+    if (!isPrivileged) {
+      filter.createdBy = req.user.userId;
+    }
 
     const docs = await Listing.find(filter)
       .sort({ createdAt: -1 })
@@ -92,11 +119,21 @@ router.get("/history", async (req, res) => {
   }
 });
 
-
+/**
+ * GET /api/history/:id
+ * Fetch a single past check by its Mongo _id. Sellers can only fetch
+ * their own; regulators/admins can fetch any.
+ */
 router.get("/history/:id", async (req, res) => {
   try {
     const doc = await Listing.findById(req.params.id);
     if (!doc) return res.status(404).json({ error: "Listing not found." });
+
+    const isPrivileged = req.user.role === "regulator" || req.user.role === "admin";
+    if (!isPrivileged && doc.createdBy.toString() !== req.user.userId) {
+      return res.status(403).json({ error: "You do not have permission to view this listing." });
+    }
+
     return res.json(doc);
   } catch (err) {
     console.error("Error in /history/:id:", err);
@@ -104,4 +141,4 @@ router.get("/history/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
