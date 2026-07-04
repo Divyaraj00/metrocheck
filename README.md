@@ -4,7 +4,7 @@
 
 MetroCheck is a REST API that validates product listings against India's Legal Metrology (Packaged Commodities) Rules, 2011 — the rules requiring every pre-packaged product sold online to declare net quantity, MRP, manufacturer details, manufacture date, consumer care contact, and more. It's built entirely as software: no physical device, sensor, or embedded component required.
 
-> Built against SIH problem statement SIH25057 — Automated Compliance Checker for Legal Metrology Declarations on E-Commerce Platforms (Ministry of Consumer Affairs, Food & Public Distribution). The core deliverable — ingest → validate → flag → report — is a data/software problem, not a hardware one.
+
 
 ## What it does
 
@@ -117,16 +117,6 @@ Sellers can only fetch their own listing checks (403 if they try someone else's)
 | `consumerCare`     | `{ email, phone }`            | at least one valid email or phone required          |
 | `isImported`       | boolean                       | if `true`, `countryOfOrigin` becomes required        |
 | `unitSalePrice`    | number                        | required                                            |
-
-## A note on ES modules
-
-This project uses `"type": "module"` in `package.json`, so all files use `import`/`export` instead of `require`/`module.exports`. One thing to remember if you add new files: local imports need the explicit `.js` extension, e.g.:
-```js
-import Listing from "../models/Listing.js";   // correct
-import Listing from "../models/Listing";      // will NOT resolve — Node ESM requires the extension
-```
-
-## Extending this later
 
 - Add OCR to extract declarations directly from package images
 - Add a `/api/check-url` endpoint that scrapes a live product page before checking
